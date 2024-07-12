@@ -132,4 +132,4 @@ def generate_art():
                            song_info=song_info)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
