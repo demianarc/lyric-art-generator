@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lyric Art Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">Lyric Art Generator</h1>
+            <p class="text-xl text-white">Generate unique artwork based on song lyrics</p>
+        </header>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div class="relative">
+                <input type="text" id="search-input" placeholder="Enter song title and artist" required
+                       class="w-full px-4 py-3 rounded-full border-2 border-gray-300 focus:outline-none focus:border-purple-500">
+                <div id="search-loader" class="absolute right-4 top-3 hidden">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+                </div>
+            </div>
+            
+            <div id="search-results" class="mt-4"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const searchInput = document.getElementById('search-input');
+        const searchResults = document.getElementById('search-results');
+        const searchLoader = document.getElementById('search-loader');
+
+        let debounceTimer;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                if (searchInput.value.length > 2) {
+                    fetchSuggestions(searchInput.value);
+                } else {
+                    searchResults.innerHTML = '';
+                }
+            }, 300);
+        });
+
+        function fetchSuggestions(query) {
+            searchLoader.classList.remove('hidden');
+            axios.get(`/search_song?query=${encodeURIComponent(query)}`)
+                .then(response => {
+                    const songs = response.data;
+                    displaySuggestions(songs);
+                })
+                .catch(error => console.error('Error:', error))
+                .finally(() => {
+                    searchLoader.classList.add('hidden');
+                });
+        }
+
+        function displaySuggestions(songs) {
+            searchResults.innerHTML = '';
+            if (songs.length > 0) {
+                const ul = document.createElement('ul');
+                ul.className = 'bg-white border border-gray-300 rounded-md shadow-lg';
+                songs.forEach(song => {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+                    li.textContent = `${song.title} by ${song.artist}`;
+                    li.addEventListener('click', () => {
+                        generateArt(song.id, song.title, song.artist);
+                    });
+                    ul.appendChild(li);
+                });
+                searchResults.appendChild(ul);
+            }
+        }
+
+        function generateArt(songId, title, artist) {
+            searchResults.innerHTML = '<p class="text-center">Generating art...</p>';
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ url_for('generate_art') }}";
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'song_id';
+            input.value = songId;
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
+</body>
+</html>
